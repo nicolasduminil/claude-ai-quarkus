@@ -50,7 +50,7 @@ public class UserResource {
 }
 ```
 
-Unlike Spring, there's no `@RequestBody` annotation — JAX-RS infers the entity body from whichever method parameter has no other binding annotation (`@PathParam`, `@QueryParam`, etc.). There's also no `@RestController`/`@RequestMapping` split: `@Path` on the class plus `@GET`/`@POST`/... on the methods is the whole mapping.
+There's no `@RequestBody` annotation — JAX-RS infers the entity body from whichever method parameter has no other binding annotation (`@PathParam`, `@QueryParam`, etc.). `@Path` on the class plus `@GET`/`@POST`/... on the methods is the whole mapping — no separate class-level/method-level annotation split needed.
 
 ## Request DTOs with Validation
 
@@ -85,7 +85,7 @@ public record UserUpdateRequest(
 ) {}
 ```
 
-Bean Validation (`jakarta.validation.*`) is a Jakarta EE standard, not a Spring feature — these annotations are identical to the ones used anywhere else; Quarkus just needs the `quarkus-hibernate-validator` extension on the classpath to process them.
+Bean Validation (`jakarta.validation.*`) is a Jakarta EE standard; Quarkus needs the `quarkus-hibernate-validator` extension on the classpath to process these annotations.
 
 ## Response DTOs
 
@@ -115,7 +115,7 @@ public record UserResponse(
 
 ## Global Exception Handling
 
-Quarkus has no `@RestControllerAdvice`/`@ExceptionHandler` mechanism. The JAX-RS equivalent is one or more `@Provider`-annotated classes implementing `ExceptionMapper<T>`, each bound to a specific exception type:
+There is no single global exception-handling class in JAX-RS. Instead, one or more `@Provider`-annotated classes implement `ExceptionMapper<T>`, each bound to a specific exception type:
 
 ```java
 @Provider
@@ -177,7 +177,7 @@ record ErrorResponse(int status, String message, LocalDateTime timestamp) {}
 record ValidationErrorResponse(int status, String message, Map<String, String> errors, LocalDateTime timestamp) {}
 ```
 
-Quarkus/RESTEasy resolves the **most specific** mapper for the thrown exception's type, falling back to a broader one (e.g. `Exception`) when no exact or subtype match exists — so registering several narrow mappers alongside one catch-all is the idiomatic replacement for a single `@RestControllerAdvice` class with multiple `@ExceptionHandler` methods.
+Quarkus/RESTEasy resolves the **most specific** mapper for the thrown exception's type, falling back to a broader one (e.g. `Exception`) when no exact or subtype match exists — so registering several narrow mappers alongside one catch-all `Exception` mapper is the idiomatic way to centralize exception handling.
 
 ## Custom Validation
 
@@ -253,7 +253,7 @@ public class ExternalApiService {
 }
 ```
 
-`@RegisterRestClient` + `@RestClient` replaces both the manual `RestClient.Builder` bean (no equivalent `@Configuration` class needed — the base URL and logging come from `application.properties`) and declarative `@HttpExchange` interfaces from Spring; it's a single, consistent mechanism for both styles.
+`@RegisterRestClient` + `@RestClient` is Quarkus's single, consistent mechanism for declarative HTTP clients — no separate `@Configuration` class to write; the base URL and logging come straight from `application.properties`.
 
 ## CORS Configuration
 
@@ -269,7 +269,7 @@ quarkus.http.cors.access-control-max-age=24H
 
 ## Problem Details (RFC 7807)-style Responses
 
-Quarkus has no `spring.mvc.problemdetails.enabled` switch that turns every exception into an RFC 7807 body automatically. Build the equivalent shape explicitly in the exception mappers above:
+Quarkus has no single switch that turns every exception into an RFC 7807 body automatically. Build the shape explicitly in the exception mappers above:
 
 ```java
 public record ProblemDetail(
@@ -308,7 +308,7 @@ public class UserNotFoundExceptionMapper implements ExceptionMapper<UserNotFound
 
 | Annotation | Purpose |
 |------------|---------|
-| `@Path` | Maps a class/method to a URI (combines Spring's `@RequestMapping` + path-specific mappings) |
+| `@Path` | Maps a class/method to a URI |
 | `@GET`/`@POST`/`@PUT`/`@DELETE`/`@PATCH` | HTTP method-specific mappings |
 | `@PathParam` | Extracts values from the URI path |
 | `@QueryParam` | Extracts query parameters |

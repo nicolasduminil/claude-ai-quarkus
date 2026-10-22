@@ -1,4 +1,4 @@
-# Quarkus Plugin for Claude Code (v0.1.0)
+# Quarkus Plugin for Claude Code (v0.1.1)
 
 A Claude Code plugin with production-ready skills and agents for building Quarkus / Java 21+ applications. Install the plugin and start generating your app — the skills and agents guide Claude to follow best practices for REST APIs, Panache, security, testing, and cloud-native deployment (Kubernetes, OpenShift, Knative).
 
@@ -59,7 +59,7 @@ Reusable knowledge that Claude loads contextually:
 - **Panache** repository/active-record pattern over hand-written JPA boilerplate
 - **RestAssured** for all HTTP tests — one client for blocking and reactive (Mutiny) resources alike
 - **Dev Services** for local databases/brokers/Keycloak — no manual Testcontainers setup
-- **Jakarta REST / CDI** throughout — no Spring annotations anywhere
+- **Jakarta REST / CDI** throughout
 - **CI pipeline** — auto-detected from existing project config
 - **Podman preferred, Docker fully supported** for container and native-image builds
 
@@ -73,7 +73,7 @@ The `cloud.md` reference and the `kubernetes-specialist`/`devops-engineer` agent
 - SmallRye Fault Tolerance (`@CircuitBreaker`, `@Retry`, `@RateLimit`)
 - OpenTelemetry with built-in OTLP export
 - Virtual threads (`@RunOnVirtualThread`), REST Client, GraalVM native image (container-based builds, no local GraalVM needed)
-- `quarkus:remote-dev` as the built-in live-coding loop (the Skaffold replacement)
+- `quarkus:remote-dev` as the built-in live-coding loop for Kubernetes development
 - TLS registry with hot certificate reload, paired with cert-manager on Kubernetes
 
 ## Usage

@@ -17,7 +17,7 @@ Testing strategies for Quarkus applications. Always write both positive and nega
 
 ## Test Types Overview
 
-Quarkus doesn't have Spring-style test "slices" (`@WebMvcTest`, `@DataJpaTest`). There are three levels instead:
+Quarkus has three test levels, with no separate "slice" annotations needed per layer:
 
 | Level | How | Speed | Scope | When to Use |
 |-------|-----|-------|-------|-------------|
@@ -290,7 +290,7 @@ class GreetingResourceTest {
 
 ## Dev Services — Built-In Testcontainers
 
-This is the biggest difference from Spring Boot's manual `@Testcontainers` + `@Container` + `@ServiceConnection` setup: **Quarkus starts and wires backing services for you, automatically, with zero test code.**
+**Quarkus starts and wires backing services for you, automatically, with zero test code.**
 
 Add the extension for the service you need — no `quarkus.datasource.jdbc.url`, no container declaration, nothing else:
 

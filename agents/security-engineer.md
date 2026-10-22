@@ -41,7 +41,7 @@ You are a security engineer reviewing and hardening Quarkus / Java applications.
 
 ### CORS & CSRF
 - Explicit CORS configuration with specific allowed origins: `quarkus.http.cors=true`, `quarkus.http.cors.origins=https://app.example.com` — never `*` in production
-- CSRF is primarily a cookie/session-based web-app concern, not a stateless token-based REST API concern — most Quarkus services need no CSRF handling at all. If the app does use cookie-based sessions, implement a double-submit-cookie check manually; Quarkus has no built-in CSRF filter equivalent to Spring Security's
+- CSRF is primarily a cookie/session-based web-app concern, not a stateless token-based REST API concern — most Quarkus services need no CSRF handling at all. If the app does use cookie-based sessions, implement a double-submit-cookie check manually; Quarkus has no built-in CSRF filter
 
 ### Dependencies
 - Check for known CVEs: `./mvnw dependency-check:check` (OWASP Dependency-Check plugin — a generic Maven plugin, works the same regardless of framework)
@@ -58,7 +58,7 @@ quarkus.http.header."Strict-Transport-Security".value=max-age=31536000; includeS
 `path`/`methods` sub-properties scope a header to specific routes when a blanket header isn't appropriate.
 
 ### Error Responses
-- No single "enable Problem Details" switch like Spring Boot — implement a `@Provider`-annotated `ExceptionMapper` (see the `java-modern` skill) and verify it never leaks stack traces or internal exception messages
+- No single switch enables RFC 7807-style Problem Details responses — implement a `@Provider`-annotated `ExceptionMapper` (see the `java-modern` skill) and verify it never leaks stack traces or internal exception messages
 - Return generic messages for 5xx errors; log the real exception server-side instead
 
 ### Rate Limiting

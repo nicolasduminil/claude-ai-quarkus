@@ -69,9 +69,9 @@ For OpenShift specifically:
 
 triggers an in-cluster image build and applies the Route/Deployment in the same step.
 
-### Remote Development — the Skaffold Replacement
+### Remote Development
 
-Where Spring Boot tooling reaches for Skaffold's build → push → deploy → watch loop, Quarkus has a built-in remote-dev mode that live-syncs source changes straight into a running pod, without rebuilding or redeploying a container image on every change:
+Quarkus has a built-in remote-dev mode that live-syncs source changes straight into a running pod, without rebuilding or redeploying a container image on every change:
 
 1. Package a mutable, remote-dev-capable jar and deploy it with dev mode enabled on the remote side:
    ```bash
@@ -84,7 +84,7 @@ Where Spring Boot tooling reaches for Skaffold's build → push → deploy → w
      -Dquarkus.live-reload.url=http://<pod-host>:8080 \
      -Dquarkus.live-reload.password=<shared-secret>
    ```
-3. Edit code locally — changes are synchronized and hot-reloaded directly inside the remote pod. This is the same iteration loop Skaffold gives Spring Boot projects, built into the Quarkus Maven plugin itself.
+3. Edit code locally — changes are synchronized and hot-reloaded directly inside the remote pod, with no separate build → push → deploy step needed, built into the Quarkus Maven plugin itself.
 
 ---
 

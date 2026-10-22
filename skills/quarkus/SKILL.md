@@ -188,7 +188,7 @@ For deeper, standalone dives also available as separate skills in this plugin: `
 - Constructor injection, with a single constructor (CDI/ArC picks it up automatically — `@Inject` on it is never needed)
 - `@Valid` on request parameters/bodies
 - `@Transactional` for multi-step writes
-- Skip `@Transactional` on simple single reads — Quarkus has no `readOnly` attribute to mirror Spring's convention
+- Skip `@Transactional` on simple single reads — Quarkus's `@Transactional` has no `readOnly` attribute
 - Type-safe config with `@ConfigMapping`
 - Global exception handling with a `@Provider`-annotated `ExceptionMapper`
 - Externalize secrets (environment variables or mounted files, not properties files)
@@ -293,7 +293,7 @@ public class OrderResource {
 }
 ```
 
-`quarkus-smallrye-jwt` validates the `Authorization: Bearer` header declaratively from the extension/config above — there is no `SecurityFilterChain`-style Java configuration class to write (see `references/security.md`).
+`quarkus-smallrye-jwt` validates the `Authorization: Bearer` header declaratively from the extension/config above — there is no Java security configuration class to write (see `references/security.md`).
 
 ## Knowledge Base
 

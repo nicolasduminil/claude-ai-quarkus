@@ -2,7 +2,7 @@
   "name": "quarkus-template",
   "displayName": "Quarkus Template",
   "description": "Enterprise Quarkus development with agents, skills, and best practices for REST APIs, Panache, security, testing, and cloud-native (Kubernetes/OpenShift/Knative) deployment.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Piotr Mińkowski",
     "url": "https://github.com/piomin"

@@ -66,7 +66,7 @@ public class User extends PanacheEntity {
 }
 ```
 
-`PanacheEntity` (active record) gives the entity a generated `Long id` and public-field style with no getters/setters to write — that's Panache's boilerplate removal, equivalent in spirit to what Spring Data saves you from writing a repository interface for simple cases. Timestamps use the standard JPA `@PrePersist`/`@PreUpdate` lifecycle callbacks: there's no `@CreatedDate`/`@LastModifiedDate`/`AuditingEntityListener` bundled by default, since those are Spring Data JPA sugar over the exact same callback mechanism. For `createdBy`/`updatedBy`-style user auditing, set the fields explicitly in the service layer (inject `SecurityIdentity`, see `security.md`) rather than reaching for an entity listener — JPA listener classes aren't CDI beans by default, so DI inside one needs an extra workaround that's rarely worth it.
+`PanacheEntity` (active record) gives the entity a generated `Long id` and public-field style with no getters/setters to write — that's Panache's own boilerplate removal. Timestamps use the standard JPA `@PrePersist`/`@PreUpdate` lifecycle callbacks; there's no `@CreatedDate`/`@LastModifiedDate`/auditing-listener combo bundled by default. For `createdBy`/`updatedBy`-style user auditing, set the fields explicitly in the service layer (inject `SecurityIdentity`, see `security.md`) rather than reaching for an entity listener — JPA listener classes aren't CDI beans by default, so DI inside one needs an extra workaround that's rarely worth it.
 
 ## Panache Repository Pattern
 
@@ -115,11 +115,11 @@ public class UserRepository implements PanacheRepository<User> {
 }
 ```
 
-`find()`/`count()`/`update()`/`delete()` take a Panache query (plain field names and a WHERE clause, or a full HQL-style query) with either named (`:email`) or positional (`?1`) parameters — always parameterized, never string-concatenated. `update()` is Panache's equivalent of Spring Data's `@Modifying @Query`, and must run inside a transaction.
+`find()`/`count()`/`update()`/`delete()` take a Panache query (plain field names and a WHERE clause, or a full HQL-style query) with either named (`:email`) or positional (`?1`) parameters — always parameterized, never string-concatenated. `update()` runs a bulk UPDATE statement and must run inside a transaction.
 
 ## Dynamic Queries
 
-Spring Data's `Specification`/`JpaSpecificationExecutor` has no direct Quarkus/Panache equivalent — Panache favors building the query string and a parameter map explicitly instead of composing predicate objects:
+Panache has no dedicated composable-predicate API — it favors building the query string and a parameter map explicitly instead:
 
 ```java
 @ApplicationScoped
@@ -145,7 +145,7 @@ public class UserRepository implements PanacheRepository<User> {
 }
 ```
 
-For genuinely complex, composable filtering, the standard JPA `CriteriaBuilder` API works unchanged in Quarkus (it's Hibernate-level, not Spring-level); the Quarkiverse `quarkus-blaze-persistence` extension is worth reaching for if the project needs a fluent, Specification-like builder on top of that.
+For genuinely complex, composable filtering, the standard JPA `CriteriaBuilder` API works unchanged in Quarkus; the Quarkiverse `quarkus-blaze-persistence` extension is worth reaching for if the project needs a fluent, composable query builder on top of that.
 
 ## Transaction Management
 
@@ -219,13 +219,13 @@ public class OrderService {
 }
 ```
 
-`jakarta.transaction.Transactional` is the JTA standard annotation — it has no `readOnly` attribute (skip the annotation entirely on plain reads instead), but it does carry the same propagation (`Transactional.TxType.REQUIRES_NEW`, `MANDATORY`, `SUPPORTS`, `NOT_SUPPORTED`, `NEVER`) and rollback control (`rollbackOn`, `dontRollbackOn`) that Spring's `@Transactional(propagation=..., noRollbackFor=...)` offers — this is standard JTA, not a Quarkus extra.
+`jakarta.transaction.Transactional` is the JTA standard annotation — it has no `readOnly` attribute (skip the annotation entirely on plain reads instead), but it does carry propagation (`Transactional.TxType.REQUIRES_NEW`, `MANDATORY`, `SUPPORTS`, `NOT_SUPPORTED`, `NEVER`) and rollback control (`rollbackOn`, `dontRollbackOn`) — standard JTA, not a Quarkus extra.
 
 A Panache entity loaded inside a transaction is dirty-checked and flushed automatically at commit — there's no `repository.save(entity)` call needed for an already-managed entity (see `order.status = ...` above); `persist()` is only for brand-new entities.
 
 ## Projections
 
-Spring Data's interface-based projections (`UserSummary` getter interfaces) are Spring Data JPA's own dynamic-proxy feature and have no Panache equivalent. The portable, JPA-standard replacement is a record/DTO built with a JPQL constructor expression:
+Panache has no interface-based projection feature (a getter interface auto-backed by a dynamic proxy). The portable, JPA-standard approach is a record/DTO built with a JPQL constructor expression:
 
 ```java
 public record UserSummary(Long id, String username, String email) {}
@@ -321,7 +321,7 @@ CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_active ON users(active);
 ```
 
-Same `V<version>__description.sql` naming convention as Spring projects (it's Flyway's own convention, not Spring's). With `quarkus-liquibase` the equivalent is `quarkus.liquibase.migrate-at-start=true` and changelog files under `src/main/resources/db/changeLog/`. Either extension, combined with the `quarkus-kubernetes` extension, gets its migration automatically turned into a Kubernetes init `Job` that gates the Deployment's rollout — see the `kubernetes-specialist` agent.
+This is Flyway's own `V<version>__description.sql` naming convention. With `quarkus-liquibase` the equivalent is `quarkus.liquibase.migrate-at-start=true` and changelog files under `src/main/resources/db/changeLog/`. Either extension, combined with the `quarkus-kubernetes` extension, gets its migration automatically turned into a Kubernetes init `Job` that gates the Deployment's rollout — see the `kubernetes-specialist` agent.
 
 ## Quick Reference
 

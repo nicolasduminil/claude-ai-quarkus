@@ -104,7 +104,7 @@ class UserIntegrationTest {
 }
 ```
 
-`RestAssured`'s `given()/when()/then()` is the one and only HTTP test client in Quarkus — the same API tests blocking resources, Mutiny-reactive resources, and (as shown further below) security-protected ones. There's no separate client type the way Spring splits `MockMvc`/`RestTestClient`/`WebTestClient` by web stack.
+`RestAssured`'s `given()/when()/then()` is the one and only HTTP test client in Quarkus — the same API tests blocking resources, Mutiny-reactive resources, and (as shown further below) security-protected ones.
 
 ## Resource Testing with Mocked Services
 
@@ -164,7 +164,7 @@ class UserResourceTest {
 }
 ```
 
-`@InjectMock` (from `quarkus-junit5-mockito`) replaces `@MockBean` — mock the CDI bean, not the whole slice. `@TestSecurity` (from the `quarkus-test-security` test-scoped dependency) replaces `@WithMockUser` — it installs a fake `SecurityIdentity` with the given username/roles for the duration of the test, with no real token needed. It only works with `@QuarkusTest`, not `@QuarkusIntegrationTest`.
+`@InjectMock` (from `quarkus-junit5-mockito`) mocks a single CDI bean without disabling the rest of the application context. `@TestSecurity` (from the `quarkus-test-security` test-scoped dependency) installs a fake `SecurityIdentity` with the given username/roles for the duration of the test, with no real token needed. It only works with `@QuarkusTest`, not `@QuarkusIntegrationTest`.
 
 ## Repository Testing
 
@@ -208,11 +208,11 @@ class UserRepositoryTest {
 }
 ```
 
-`@TestTransaction` wraps the test method in a transaction that's rolled back at the end — a lightweight alternative to manually deleting rows in `@BeforeEach` when a test only needs its own writes to disappear afterward. No separate `@DataJpaTest` annotation exists: this is a plain `@QuarkusTest`, which is already fast because the Quarkus app only boots once for the whole test run.
+`@TestTransaction` wraps the test method in a transaction that's rolled back at the end — a lightweight alternative to manually deleting rows in `@BeforeEach` when a test only needs its own writes to disappear afterward. There's no separate repository-slice annotation: this is a plain `@QuarkusTest`, which is already fast because the Quarkus app only boots once for the whole test run.
 
 ## Dev Services — Zero-Config Testcontainers
 
-This is the biggest departure from Spring Boot's testing story. Add the datasource extension:
+Add the datasource extension:
 
 ```xml
 <dependency>
@@ -247,7 +247,7 @@ class OrderReactiveResourceTest {
 }
 ```
 
-Note there's no `@WebFluxTest`/`WebTestClient` split for reactive resources — the exact same `@QuarkusTest` + RestAssured combination used for blocking resources tests a `Uni<T>`-returning one, because RestAssured only ever sees real HTTP responses, not the reactive type behind them.
+There's no separate test setup for reactive resources — the exact same `@QuarkusTest` + RestAssured combination used for blocking resources tests a `Uni<T>`-returning one, because RestAssured only ever sees real HTTP responses, not the reactive type behind them.
 
 ## Testing Configuration
 
@@ -261,8 +261,7 @@ Note there's no `@WebFluxTest`/`WebTestClient` split for reactive resources — 
 ```
 
 ```java
-@TestConfiguration
-public class TestConfig {
+public class TestClockProducer {
 
     @Produces
     @Alternative
@@ -273,7 +272,7 @@ public class TestConfig {
 }
 ```
 
-CDI's `@Alternative` + `@Priority`, combined with a `QuarkusTestProfile` that enables it (`getEnabledAlternatives()`), is the Quarkus equivalent of Spring's `@TestConfiguration` + `@Primary` bean override — see the standalone `testing-patterns` skill for `@TestProfile` in full.
+A CDI `@Alternative` producer like this, enabled for a specific test class via a `QuarkusTestProfile`'s `getEnabledAlternatives()`, overrides the real bean only for tests using that profile — see the standalone `testing-patterns` skill for `@TestProfile` in full.
 
 ## Test Fixtures
 
@@ -295,7 +294,7 @@ public class TestDataFactory {
 }
 ```
 
-A plain static factory class (no CDI scope needed) is enough here — there's no requirement to make test fixtures into Spring `@Component` beans.
+A plain static factory class (no CDI scope needed) is enough here — test fixtures don't need to be CDI beans at all.
 
 ## Quick Reference
 
@@ -303,8 +302,8 @@ A plain static factory class (no CDI scope needed) is enough here — there's no
 |------------|---------|
 | `@QuarkusTest` | Boots the full CDI container in-process; the default for anything touching a bean |
 | `@QuarkusIntegrationTest` | Runs the packaged jar/native image/container as a black box (see `testing-patterns` skill) |
-| `@InjectMock` / `@InjectSpy` | Mock/spy a CDI bean (replaces `@MockBean`) |
-| `@TestSecurity` | Install a fake authenticated identity for a test (replaces `@WithMockUser`) |
+| `@InjectMock` / `@InjectSpy` | Mock/spy a single CDI bean |
+| `@TestSecurity` | Install a fake authenticated identity for a test |
 | `@TestTransaction` | Roll back the test method's transaction automatically |
 | Dev Services (just add the extension) | Zero-config Testcontainers for DB/Kafka/Redis/etc. |
 | `@TestProfile` | Run a test class with different config/alternatives |

@@ -77,7 +77,7 @@ List<Author> authors = authorRepository.findAllWithBooks();
 ### Solution 2: Named Entity Graph
 
 ```java
-// ✅ GOOD: Entity graph for declarative fetching (pure JPA, works identically outside Spring)
+// ✅ GOOD: Entity graph for declarative fetching (pure JPA/Hibernate feature)
 @Entity
 @NamedEntityGraph(
     name = "Author.withBooks",
@@ -213,7 +213,7 @@ public class OrderService {
 }
 ```
 
-> Quarkus's `@Transactional` (`jakarta.transaction.Transactional`) has no `readOnly` attribute — that's a Spring-specific convenience. There is no built-in read-only optimization hint.
+> Quarkus's `@Transactional` (`jakarta.transaction.Transactional`) has no `readOnly` attribute and no built-in read-only optimization hint.
 
 **Solution 3: DTO projection (best for read-only)**
 ```java
@@ -303,7 +303,7 @@ public class OrderProcessor {
 }
 ```
 
-This is the same pitfall as Spring AOP proxies — CDI interceptors (`@Transactional` included) are woven around a proxy, and calling a method via `this` bypasses it entirely.
+This is a classic proxy pitfall — CDI interceptors (`@Transactional` included) are woven around a proxy, and calling a method via `this` bypasses it entirely.
 
 ---
 

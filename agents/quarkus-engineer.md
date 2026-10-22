@@ -36,7 +36,7 @@ src/main/java/<base-package>/
 
 ## Key Patterns
 
-- `@Transactional` on mutating service methods — Quarkus's `@Transactional` has no `readOnly` attribute (see `jpa-patterns` skill), so skip it entirely on simple single reads rather than mimicking Spring's class-level `readOnly = true`
+- `@Transactional` on mutating service methods — Quarkus's `@Transactional` has no `readOnly` attribute (see `jpa-patterns` skill), so skip it entirely on simple single reads
 - `@Valid` on JAX-RS resource method parameters (no `@RequestBody` needed — JAX-RS infers the body from the unannotated parameter)
 - DTOs as Java records for request/response objects
 - `@Provider` + `ExceptionMapper<T>` for global exception handling (one mapper per exception type, or a single broad one using pattern-matching `switch` — see `java-modern` skill)

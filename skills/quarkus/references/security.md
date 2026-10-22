@@ -1,6 +1,6 @@
 # Security - Quarkus Security
 
-Quarkus Security is config-driven, not a Java `@Configuration` class: there is no `SecurityFilterChain` bean to write. Path-level rules, the auth mechanism, and role mapping all come from extensions + `application.properties`.
+Quarkus Security is config-driven: there is no Java security configuration class to write. Path-level rules, the auth mechanism, and role mapping all come from extensions + `application.properties`.
 
 ## Security Configuration
 
@@ -146,7 +146,7 @@ public class AuthenticationService {
 }
 ```
 
-`io.quarkus.elytron.security.common.BcryptUtil` ships with Quarkus (`quarkus-elytron-security-common`, pulled in transitively by `quarkus-smallrye-jwt`/`quarkus-oidc`) and replaces Spring Security's `BCryptPasswordEncoder` one-for-one — `bcryptHash(password)` to hash, `matches(password, hash)` to verify.
+`io.quarkus.elytron.security.common.BcryptUtil` ships with Quarkus (`quarkus-elytron-security-common`, pulled in transitively by `quarkus-smallrye-jwt`/`quarkus-oidc`) for password hashing — `bcryptHash(password)` to hash, `matches(password, hash)` to verify.
 
 ## Method Security
 
@@ -183,7 +183,7 @@ public class UserService {
 }
 ```
 
-`@RolesAllowed`/`@PermitAll`/`@DenyAll` are the standard `jakarta.annotation.security` annotations — not Quarkus- or Spring-specific — and work on CDI beans and JAX-RS resource methods alike. `@Authenticated` (`io.quarkus.security.Authenticated`) is Quarkus's own equivalent of Spring Security's `isAuthenticated()` expression: any valid identity, no specific role required. There's no SpEL-style `@PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")` expression language — the ownership check above is a plain `if`, which is also easier to unit test without bootstrapping a security context.
+`@RolesAllowed`/`@PermitAll`/`@DenyAll` are the standard `jakarta.annotation.security` annotations and work on CDI beans and JAX-RS resource methods alike. `@Authenticated` (`io.quarkus.security.Authenticated`) requires any valid identity, with no specific role needed. There's no expression-language-based authorization annotation for more complex rules — the ownership check above is a plain `if`, which is also easy to unit test without bootstrapping a security context.
 
 ## OIDC Resource Server (External Identity Provider)
 
@@ -265,7 +265,7 @@ Covered in depth by the `security-engineer` agent: the unified TLS registry (`qu
 | `@RolesAllowed` | Role-based method/class security (standard `jakarta.annotation.security`) |
 | `io.quarkus.security.Authenticated` | Require any authenticated identity, no specific role |
 | `SecurityIdentity` | Inject to read the current principal/roles/attributes programmatically |
-| `BcryptUtil.bcryptHash()` / `.matches()` | Password hashing (replaces `BCryptPasswordEncoder`) |
+| `BcryptUtil.bcryptHash()` / `.matches()` | Password hashing |
 | `Jwt.issuer(...).sign()` | Build and sign a JWT (SmallRye JWT Build) |
 | `quarkus-smallrye-jwt` / `quarkus-oidc` | Validate bearer tokens declaratively — no custom filter |
 | Keycloak Dev Services (add `quarkus-oidc`, leave `auth-server-url` unset) | Auto-starts a pre-provisioned Keycloak container for dev/test, zero config |

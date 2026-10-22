@@ -2,10 +2,10 @@
 
 ## Centralized Configuration
 
-Quarkus has no dedicated "Config Server" component the way Spring Cloud Config does — the architecture is different by design, not a missing feature to work around:
+Quarkus has no dedicated "Config Server" component — centralized configuration is handled through a few complementary mechanisms instead:
 
 - **Per-environment config shipped with the app**: Quarkus profiles (`%dev.`, `%test.`, `%prod.` property prefixes) bundle every environment's overrides into the same `application.properties`, so there's nothing external to stand up for that case.
-- **Kubernetes-native config**: `quarkus-kubernetes-config` reads `ConfigMap`/`Secret` objects directly from the Kubernetes API at startup — see `kubernetes-specialist` agent. It re-reads at the next restart, not live; Quarkus config in general is not hot-reloadable the way `@RefreshScope` + `/actuator/refresh` is in Spring.
+- **Kubernetes-native config**: `quarkus-kubernetes-config` reads `ConfigMap`/`Secret` objects directly from the Kubernetes API at startup — see `kubernetes-specialist` agent. It re-reads at the next restart, not live; Quarkus config in general is not hot-reloadable at runtime.
 - **External secret stores**: `quarkus-vault` for HashiCorp Vault-backed secrets.
 
 ```properties
@@ -16,7 +16,7 @@ quarkus.kubernetes-config.secrets=my-app-secrets
 
 ## Dynamic Configuration Refresh
 
-There is no `@RefreshScope`/`/actuator/refresh` equivalent. `@ConfigProperty`-injected fields are resolved once, at injection time. For a value that genuinely needs to reflect a change without a restart, inject the config API directly and re-read on every call instead of caching the value in a field:
+`@ConfigProperty`-injected fields are resolved once, at injection time, and Quarkus has no mechanism to refresh them afterward. For a value that genuinely needs to reflect a change without a restart, inject the config API directly and re-read on every call instead of caching the value in a field:
 
 ```java
 @ApplicationScoped
@@ -32,11 +32,11 @@ public class FeatureFlags {
 }
 ```
 
-This only reflects a genuinely new value if the underlying config source itself can change at runtime (a mutable custom `ConfigSource`, for instance) — plain environment variables and `application.properties` are fixed for the life of the process either way, in both Quarkus and Spring.
+This only reflects a genuinely new value if the underlying config source itself can change at runtime (a mutable custom `ConfigSource`, for instance) — plain environment variables and `application.properties` are fixed for the life of the process either way.
 
 ## Service Discovery & Load Balancing - SmallRye Stork
 
-On Kubernetes, Service objects already give DNS-based discovery for free — most Quarkus services never need a client-side registry at all. For anywhere that genuinely needs client-side service discovery and load balancing (Consul, static lists, or Kubernetes endpoints without going through a Service), SmallRye Stork is the built-in answer — it plays the role Eureka + Spring Cloud LoadBalancer play together in Spring Cloud:
+On Kubernetes, Service objects already give DNS-based discovery for free — most Quarkus services never need a client-side registry at all. For anywhere that genuinely needs client-side service discovery and load balancing (Consul, static lists, or Kubernetes endpoints without going through a Service), SmallRye Stork is the built-in service-discovery-plus-load-balancing layer:
 
 ```properties
 # application.properties
@@ -60,7 +60,7 @@ Setting the REST client's base URI scheme to `stork://<service-name>` is the onl
 
 ## API Gateway
 
-Quarkus has no bundled gateway component equivalent to Spring Cloud Gateway. On Kubernetes, that role is usually filled by an Ingress controller (NGINX, etc.), a service mesh (Istio), or a dedicated API gateway product (Kong, Apache APISIX) sitting in front of the cluster — routing, rate limiting, and auth-at-the-edge concerns live there rather than in a Quarkus application.
+Quarkus has no bundled API gateway component. On Kubernetes, that role is usually filled by an Ingress controller (NGINX, etc.), a service mesh (Istio), or a dedicated API gateway product (Kong, Apache APISIX) sitting in front of the cluster — routing, rate limiting, and auth-at-the-edge concerns live there rather than in a Quarkus application.
 
 ## Fault Tolerance - SmallRye Fault Tolerance
 
@@ -87,7 +87,7 @@ public class ExternalApiService {
 }
 ```
 
-`@CircuitBreaker`, `@Retry`, `@Fallback`, `@Timeout`, and `@Bulkhead` come from the MicroProfile Fault Tolerance spec — the same role Resilience4j plays via Spring Cloud Circuit Breaker. `@RateLimit` is a SmallRye-specific addition on top of the spec. Unlike Resilience4j, these are primarily configured via annotation attributes rather than externalized `application.properties` blocks, though every attribute can still be overridden with a property named `<ClassName>/<methodName>/<Annotation>/<attribute>`.
+`@CircuitBreaker`, `@Retry`, `@Fallback`, `@Timeout`, and `@Bulkhead` come from the MicroProfile Fault Tolerance spec. `@RateLimit` is a SmallRye-specific addition on top of the spec. These are primarily configured via annotation attributes rather than externalized `application.properties` blocks, though every attribute can still be overridden with a property named `<ClassName>/<methodName>/<Annotation>/<attribute>`.
 
 ## Distributed Tracing - OpenTelemetry
 
@@ -104,7 +104,7 @@ quarkus.otel.traces.sampler=always_on
 quarkus.otel.exporter.otlp.endpoint=http://localhost:4318
 ```
 
-Unlike Spring (which needs `micrometer-tracing-bridge-otel` + a separate `opentelemetry-exporter-otlp` dependency), `quarkus-opentelemetry` ships OTLP export out of the box — there's nothing else to add for the common case.
+`quarkus-opentelemetry` ships OTLP export out of the box — there's nothing else to add for the common case.
 
 ### Custom Spans
 
@@ -134,7 +134,7 @@ public class OrderService {
 }
 ```
 
-Quarkus doesn't have a direct equivalent of Micrometer's unified Observation API (one call instrumenting both a metric and a trace span together); metrics (Micrometer) and tracing (OpenTelemetry) are two separate extensions here, each with its own API — inject `io.opentelemetry.api.trace.Tracer` directly for custom spans as shown above.
+Metrics (Micrometer) and tracing (OpenTelemetry) are two separate extensions in Quarkus, each with its own API — inject `io.opentelemetry.api.trace.Tracer` directly for custom spans as shown above, and `MeterRegistry` separately for custom metrics.
 
 ## Health Checks & Metrics
 
@@ -176,19 +176,19 @@ public class ExternalServiceHealthCheck implements HealthCheck {
 }
 ```
 
-`HealthCheck` (`org.eclipse.microprofile.health.HealthCheck`) plus the `@Liveness`/`@Readiness`/`@Startup` qualifier is the MicroProfile Health standard — the same role Spring Boot's `HealthIndicator` plays, just a different interface name. Both `/q/health/live` and `/q/health/ready` (and the aggregate `/q/health`) exist with zero extra code once the extension is added; see the `kubernetes-specialist` agent for how the generated Kubernetes manifest wires these in as probes automatically, and `devops-engineer`/`security-engineer` for the Prometheus `ServiceMonitor` that gets generated alongside them.
+`HealthCheck` (`org.eclipse.microprofile.health.HealthCheck`) plus the `@Liveness`/`@Readiness`/`@Startup` qualifier is the MicroProfile Health standard. Both `/q/health/live` and `/q/health/ready` (and the aggregate `/q/health`) exist with zero extra code once the extension is added; see the `kubernetes-specialist` agent for how the generated Kubernetes manifest wires these in as probes automatically, and `devops-engineer`/`security-engineer` for the Prometheus `ServiceMonitor` that gets generated alongside them.
 
 ## Kubernetes Deployment
 
-Unlike Spring, where the Deployment/Service/ConfigMap YAML is hand-written, Quarkus's `quarkus-kubernetes`/`quarkus-openshift`/`quarkus-knative` extensions **generate** the manifests from the project's code, config, and classpath at build time — including health probes, a Prometheus `ServiceMonitor`, and even a migration `Job` for Flyway/Liquibase. Build and deploy is a single Maven property, not a separate `kubectl apply` step. Full details, properties, and examples live in the `kubernetes-specialist` agent — this is intentionally not duplicated here.
+Quarkus's `quarkus-kubernetes`/`quarkus-openshift`/`quarkus-knative` extensions **generate** the manifests from the project's code, config, and classpath at build time — including health probes, a Prometheus `ServiceMonitor`, and even a migration `Job` for Flyway/Liquibase, with no YAML to hand-write for the common case. Build and deploy is a single Maven property, not a separate `kubectl apply` step. Full details, properties, and examples live in the `kubernetes-specialist` agent — this is intentionally not duplicated here.
 
 ## Virtual Threads
 
-See the `java-modern` skill for `@RunOnVirtualThread` — Quarkus has no single blanket switch equivalent to Spring's `spring.threads.virtual.enabled=true`; virtual threads are opted into per blocking endpoint/method.
+See the `java-modern` skill for `@RunOnVirtualThread` — there is no single blanket switch for virtual threads; they're opted into per blocking endpoint/method.
 
 ## HTTP Interface Clients
 
-See `web.md` for the full `@RegisterRestClient` + `@RestClient` pattern, which is Quarkus's one declarative HTTP client mechanism (covering what Spring splits across `@HttpExchange` interfaces and OpenFeign).
+See `web.md` for the full `@RegisterRestClient` + `@RestClient` pattern, Quarkus's one declarative HTTP client mechanism.
 
 ## GraalVM Native Image
 
@@ -211,7 +211,7 @@ Native executables start in tens of milliseconds and run with a small fraction o
 quarkus.shutdown.timeout=30s
 ```
 
-Quarkus already waits briefly for in-flight requests to finish by default on shutdown — unlike Spring Boot, where `server.shutdown=immediate` is the default and `graceful` must be opted into explicitly. `quarkus.shutdown.timeout` just caps how long that default wait is allowed to run.
+Quarkus already waits briefly for in-flight requests to finish by default on shutdown. `quarkus.shutdown.timeout` caps how long that default wait is allowed to run.
 
 ```yaml
 # Kubernetes - preStop hook to allow deregistration before the process receives SIGTERM
@@ -226,7 +226,7 @@ spec:
 
 ## Container Images & Local Kubernetes Development
 
-Building images (Podman/Docker/Jib extensions) and the build→deploy loop (`quarkus.kubernetes.deploy=true`, and `quarkus:remote-dev` as the Skaffold-equivalent live-coding loop) are covered end-to-end by the `devops-engineer` and `kubernetes-specialist` agents — not repeated here.
+Building images (Podman/Docker/Jib extensions) and the build→deploy loop (`quarkus.kubernetes.deploy=true`, and `quarkus:remote-dev` as the live-coding loop) are covered end-to-end by the `devops-engineer` and `kubernetes-specialist` agents — not repeated here.
 
 ## Quick Reference
 
