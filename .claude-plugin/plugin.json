@@ -1,0 +1,13 @@
+{
+  "name": "quarkus-template",
+  "displayName": "Quarkus Template",
+  "description": "Enterprise Quarkus development with agents, skills, and best practices for REST APIs, Panache, security, testing, and cloud-native (Kubernetes/OpenShift/Knative) deployment.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Piotr Mińkowski",
+    "url": "https://github.com/piomin"
+  },
+  "repository": "https://github.com/piomin/claude-ai-quarkus",
+  "keywords": ["quarkus", "java", "maven", "enterprise", "panache", "testing", "kubernetes", "openshift", "knative", "microservices"],
+  "license": "Apache-2.0"
+}

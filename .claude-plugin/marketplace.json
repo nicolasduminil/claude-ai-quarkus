@@ -1,0 +1,11 @@
+{
+  "name": "piomin",
+  "owner": { "name": "Piotr Mińkowski" },
+  "plugins": [
+    {
+      "name": "quarkus-template",
+      "source": { "source": "github", "repo": "piomin/claude-ai-quarkus" },
+      "description": "Enterprise Quarkus development with agents, skills, and best practices"
+    }
+  ]
+}
